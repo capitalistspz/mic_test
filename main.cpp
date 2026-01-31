@@ -1,24 +1,25 @@
 #include <chrono>
-#include <cstdint>
 #include <cstdlib>
-#include <wut.h>
-#include <whb/log.h>
-#include <whb/log_udp.h>
-#include <whb/log_cafe.h>
-#include "mic.hpp"
-#include <whb/proc.h>
-#include <sysapp/launch.h>
-#include <vpad/input.h>
+
 #include <memory>
 #include <vector>
 #include <span>
 #include <thread>
-#include <sndcore2/core.h>
-#include <bits/this_thread_sleep.h>
 
 #include "file.hpp"
 #include "wav.hpp"
+
 #include <coreinit/time.h>
+#include <mic/mic.h>
+#include <sndcore2/core.h>
+#include <sysapp/launch.h>
+#include <vpad/input.h>
+
+#include <whb/log.h>
+#include <whb/log_udp.h>
+#include <whb/log_cafe.h>
+#include <whb/proc.h>
+#include <wut.h>
 
 constexpr auto MIC_WORK_SAMPLE_COUNT = 1 << 18;
 
@@ -29,7 +30,7 @@ constexpr auto MIC_WORK_SAMPLE_COUNT = 1 << 18;
     std::exit(0);
 }
 
-void SaveWAV(const std::filesystem::path& path, const std::vector<int16_t>& buffer, unsigned sampleRate);
+void SaveWAV(const std::filesystem::path& path, std::vector<int16_t> buffer, unsigned sampleRate);
 
 
 int main() {
@@ -101,11 +102,11 @@ int main() {
     return 0;
 }
 
-void SaveWAV(const std::filesystem::path& path, const std::vector<int16_t> buffer, unsigned sampleRate) {
+void SaveWAV(const std::filesystem::path& path, std::vector<int16_t> buffer, unsigned sampleRate) {
 
     master_riff_chunk_t riffChunk {
         .type_bloc_id = 'RIFF',
-        .size = 4 + sizeof(wav_chunk_header_t) + sizeof(wav_format_chunk_t) + sizeof(wav_chunk_header_t) + buffer.size() * 2,
+        .size = 4 + sizeof(wav_chunk_header_t) + sizeof(wav_format_chunk_t) + sizeof(wav_chunk_header_t) + buffer.size() * sizeof(int16_t),
         .format = 'WAVE'
     };
 
@@ -115,11 +116,11 @@ void SaveWAV(const std::filesystem::path& path, const std::vector<int16_t> buffe
     formatChunk.audio_format = audio_format_t::pcm;
     formatChunk.n_channels = 1;
     formatChunk.sample_rate = sampleRate;
-    formatChunk.bits_per_sample = 16;
+    formatChunk.bits_per_sample = 8 * sizeof(int16_t);
     formatChunk.bytes_per_block = (formatChunk.n_channels * formatChunk.bits_per_sample) / 8;
     formatChunk.bytes_per_sec = formatChunk.sample_rate * formatChunk.bytes_per_block;
 ;
-    wav_chunk_header_t dataHeader {.block_id = bloc_id_t::data, .chunk_size = buffer.size() * 2};
+    wav_chunk_header_t dataHeader {.block_id = bloc_id_t::data, .chunk_size = buffer.size() * sizeof(int16_t)};
 
     auto file = wbfile(path);
     file.write(riffChunk);
