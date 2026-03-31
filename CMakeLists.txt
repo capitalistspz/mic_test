@@ -4,7 +4,6 @@ project(mic_test)
 set(CMAKE_CXX_STANDARD 23)
 
 add_executable(mic_test main.cpp
-        wav.hpp file.hpp ints.hpp bstype.hpp
-        mic.hpp)
+        wav.hpp file.hpp ints.hpp bstype.hpp)
 
 wut_create_rpx(mic_test)
